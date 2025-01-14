@@ -1,0 +1,67 @@
+{
+    "name": "eventjet/test-double",
+    "type": "library",
+    "description": "",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.3",
+        "psr/log": "^3.0"
+    },
+    "require-dev": {
+        "eventjet/coding-standard": "^3.12",
+        "infection/infection": "^0.27.0",
+        "maglnet/composer-require-checker": "^4.6",
+        "phpstan/extension-installer": "^1.3",
+        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan-phpunit": "^1.3",
+        "phpstan/phpstan-strict-rules": "^1.5",
+        "phpunit/phpunit": "^10.2",
+        "psalm/plugin-phpunit": "^0.18.4",
+        "vimeo/psalm": "^5.10"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "infection/extension-installer": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Eventjet\\TestDouble\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Eventjet\\Test\\Functional\\TestDouble\\": "tests/functional",
+            "Eventjet\\Test\\Unit\\TestDouble\\": "tests/unit"
+        }
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://pack.eventjet.at/"
+        }
+    ],
+    "minimum-stability": "stable",
+    "scripts": {
+        "check": [
+            "@check-deps",
+            "@cs-check",
+            "@psalm",
+            "@phpstan",
+            "@phpunit",
+            "@infection"
+        ],
+        "check-deps": "composer-require-checker",
+        "cs-check": "php-cs-fixer fix --dry-run",
+        "cs-fix": "php-cs-fixer fix",
+        "infection": "infection -jmax",
+        "infection-diff": "infection -jmax --git-diff-lines --min-msi=100 --min-covered-msi=100 --ignore-msi-with-no-mutations",
+        "infection-xdebug": "infection --initial-tests-php-options='-d zend_extension=xdebug.so'",
+        "phpstan": "phpstan analyse",
+        "phpunit": "phpunit",
+        "psalm": "psalm"
+    }
+}

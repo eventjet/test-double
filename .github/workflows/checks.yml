@@ -1,0 +1,8 @@
+name: PHP
+
+on: [pull_request]
+
+jobs:
+  qa:
+    uses: eventjet/ci/.github/workflows/php.yml@main
+    secrets: inherit
