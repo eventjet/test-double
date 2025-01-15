@@ -6,7 +6,9 @@ namespace Eventjet\TestDouble;
 
 use Psr\Log\AbstractLogger;
 use Stringable;
+use Throwable;
 
+use function array_key_exists;
 use function count;
 use function explode;
 use function get_debug_type;
@@ -18,6 +20,8 @@ use function str_contains;
 
 /**
  * @phpstan-type Matcher callable(LogRecord): (true | string)
+ * @phpstan-type ValueMatcher callable(mixed): (true | string)
+ * @phpstan-type ExceptionMatcher callable(Throwable): (true | string)
  */
 final class TestLogger extends AbstractLogger
 {
@@ -86,6 +90,38 @@ final class TestLogger extends AbstractLogger
                 self::toString($record->level),
             );
         };
+    }
+
+    /**
+     * @param ValueMatcher $valueMatcher
+     * @return Matcher
+     */
+    public static function contextValueMatches(string $key, callable $valueMatcher): callable
+    {
+        return static function (LogRecord $record) use ($key, $valueMatcher): true|string {
+            if (!array_key_exists($key, $record->context)) {
+                return sprintf('Context has no key "%s".', $key);
+            }
+            $result = $valueMatcher($record->context[$key]);
+            if ($result === true) {
+                return true;
+            }
+            return sprintf("Context value \"%s\" does not match:\n%s", $key, self::indent($result));
+        };
+    }
+
+    /**
+     * @param ExceptionMatcher $exceptionMatcher
+     * @return Matcher
+     */
+    public static function exceptionMatches(callable $exceptionMatcher): callable
+    {
+        return self::contextValueMatches('exception', static function (mixed $value) use ($exceptionMatcher): true|string {
+            if (!$value instanceof Throwable) {
+                return sprintf('Expected an instance of Throwable, got %s.', self::toString($value));
+            }
+            return $exceptionMatcher($value);
+        });
     }
 
     private static function toString(mixed $value): string
