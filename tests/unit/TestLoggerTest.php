@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Eventjet\Test\Unit\TestDouble;
 
+use DateTime;
+use Eventjet\Test\Unit\TestDouble\Fixtures\CustomError;
 use Eventjet\TestDouble\LogRecord;
 use Eventjet\TestDouble\TestLogger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
+use Throwable;
 
 /**
  * @phpstan-import-type Matcher from TestLogger
@@ -84,6 +87,59 @@ final class TestLoggerTest extends TestCase
                   Expected log level 123, got 12.3.
                 EOF,
         ];
+        yield 'contextValueMatches: key does not exist' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['bar' => 'baz'])],
+            TestLogger::contextValueMatches('foo', static fn() => true),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context has no key "foo".
+                EOF,
+        ];
+        yield 'contextValueMatches: does not match' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['foo' => 'baz'])],
+            TestLogger::contextValueMatches('foo', static fn() => 'Wrong'),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context value "foo" does not match:
+                    Wrong
+                EOF,
+        ];
+        yield 'exceptionMatches: key does not exist' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['foo' => 'bar'])],
+            TestLogger::exceptionMatches(static fn() => true),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context has no key "exception".
+                EOF,
+        ];
+        yield 'exceptionMatches: string instead of exception' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['exception' => 'bar'])],
+            TestLogger::exceptionMatches(static fn() => 'Wrong'),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context value "exception" does not match:
+                    Expected an instance of Throwable, got "bar".
+                EOF,
+        ];
+        yield 'exceptionMatches: not a Throwable' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['exception' => new DateTime()])],
+            TestLogger::exceptionMatches(static fn() => true),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context value "exception" does not match:
+                    Expected an instance of Throwable, got DateTime.
+                EOF,
+        ];
     }
 
     /**
@@ -125,6 +181,19 @@ final class TestLoggerTest extends TestCase
                 new LogRecord(LogLevel::INFO, 'Bar'),
             ],
             TestLogger::message('Bar'),
+        ];
+        yield 'Context value matches' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['bar' => 'baz'])],
+            TestLogger::contextValueMatches(
+                'bar',
+                static fn(mixed $value): true|string => $value === 'baz' ? true : 'Wrong',
+            ),
+        ];
+        yield 'exceptionMatches: matches' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['exception' => new CustomError()])],
+            TestLogger::exceptionMatches(
+                static fn(Throwable $error) => $error instanceof CustomError ? true : 'Wrong',
+            ),
         ];
     }
 
