@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="https://webservice.isys-cee.com/GAC" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" targetNamespace="https://webservice.isys-cee.com/GAC" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">GACWS_v1.2</wsdl:documentation>
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="https://webservice.isys-cee.com/GAC">
+      <s:element name="SendRequest">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Input" type="tns:InputData"/>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="InputData">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="UserName" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="Password" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="ProjectID" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="RequestType" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="XMLData" type="s:string"/>
+        </s:sequence>
+      </s:complexType>
+      <s:element name="SendRequestResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="SendRequestResult" type="tns:OutputData"/>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="OutputData">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Status" type="s:int"/>
+          <s:element minOccurs="0" maxOccurs="1" name="Error" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="ProjectID" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="RequestType" type="s:string"/>
+          <s:element minOccurs="0" maxOccurs="1" name="XMLResult" type="s:string"/>
+        </s:sequence>
+      </s:complexType>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="SendRequestSoapIn">
+    <wsdl:part name="parameters" element="tns:SendRequest"/>
+  </wsdl:message>
+  <wsdl:message name="SendRequestSoapOut">
+    <wsdl:part name="parameters" element="tns:SendRequestResponse"/>
+  </wsdl:message>
+  <wsdl:portType name="GACWSSoap">
+    <wsdl:operation name="SendRequest">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">&lt;br/&gt;&lt;b&gt;Description&lt;/b&gt;&lt;br/&gt;Sending request to the Web-service&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Params&lt;/b&gt;&lt;br/&gt;InputData &lt;i&gt;(XMLData must be Triple DES ecrypted (ECB) with unique secret key)&lt;/i&gt;&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Returns&lt;/b&gt;&lt;br/&gt;OutputData &lt;i&gt;(XMLResult is Triple DES ecrypted (ECB))&lt;/i&gt;</wsdl:documentation>
+      <wsdl:input message="tns:SendRequestSoapIn"/>
+      <wsdl:output message="tns:SendRequestSoapOut"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="GACWSSoap" type="tns:GACWSSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="SendRequest">
+      <soap:operation soapAction="https://webservice.isys-cee.com/GAC/SendRequest" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="GACWSSoap12" type="tns:GACWSSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="SendRequest">
+      <soap12:operation soapAction="https://webservice.isys-cee.com/GAC/SendRequest" style="document"/>
+      <wsdl:input>
+        <soap12:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="GACWS">
+    <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">GACWS_v1.2</wsdl:documentation>
+    <wsdl:port name="GACWSSoap" binding="tns:GACWSSoap">
+      <soap:address location="https://webservice.isys-cee.com/TEST/GAC/Service.asmx"/>
+    </wsdl:port>
+    <wsdl:port name="GACWSSoap12" binding="tns:GACWSSoap12">
+      <soap12:address location="https://webservice.isys-cee.com/TEST/GAC/Service.asmx"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
