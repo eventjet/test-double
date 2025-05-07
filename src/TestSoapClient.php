@@ -29,6 +29,19 @@ final class TestSoapClient extends SoapClient
     }
 
     /**
+     * @return Matcher
+     */
+    public static function argValue(string $key, mixed $value): callable
+    {
+        return static function (string $name, array $args) use ($key, $value): string|true {
+            if ($args[$key] === $value) {
+                return true;
+            }
+            return "Arg with key $key has not expected value";
+        };
+    }
+
+    /**
      * @param array<int, string> $issues
      */
     private static function formatIssues(array $issues): string

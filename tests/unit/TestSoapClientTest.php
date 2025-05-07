@@ -56,18 +56,8 @@ final class TestSoapClientTest extends TestCase
     {
         $responseA = new stdClass();
         $responseB = new stdClass();
-        $this->soapClient->map(static function (string $name, array $args): string|true {
-            if ($args['foo'] === 'bar') {
-                return true;
-            }
-            return 'not valid';
-        }, $responseA, 2);
-        $this->soapClient->map(static function (string $name, array $args): string|true {
-            if ($args['foo'] === 'baz') {
-                return true;
-            }
-            return 'not valid';
-        }, $responseB);
+        $this->soapClient->map(TestSoapClient::argValue('foo', 'bar'), $responseA, 2);
+        $this->soapClient->map(TestSoapClient::argValue('foo', 'baz'), $responseB);
 
         /** @phpstan-ignore argument.unknown */
         $clientResponseA1 = $this->soapClient->sendRequest(foo: 'bar');
