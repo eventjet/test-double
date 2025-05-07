@@ -85,6 +85,7 @@ final class TestSoapClient extends SoapClient
     /**
      * @param Matcher $matcher
      * @param positive-int $maxMatches
+     * @infection-ignore-all mutating $maxMatches to 0 doesn't make sense because of positive-int type
      */
     public function map(callable $matcher, object $response, int $maxMatches = 1): void
     {
