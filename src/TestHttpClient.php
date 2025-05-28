@@ -106,7 +106,7 @@ final class TestHttpClient implements ClientInterface
     private static function noMatchersLeft(RequestInterface $request): never
     {
         throw new RuntimeException(sprintf(
-            'There are no matchers left for %s.',
+            'Got a request for %s, but there are no matchers left.',
             self::requestName($request),
         ));
     }

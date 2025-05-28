@@ -66,7 +66,7 @@ final class TestHttpClientTest extends TestCase
         yield 'No matchers left' => [
             [],
             self::parseRequest('GET https://example.com/foo'),
-            'There are no matchers left for GET https://example.com/foo.',
+            'Got a request for GET https://example.com/foo, but there are no matchers left.',
         ];
         yield 'Multiple matches' => [
             [Http::method('GET'), Http::path('/a')],
@@ -177,7 +177,7 @@ final class TestHttpClientTest extends TestCase
         $this->client->sendRequest($request);
 
         $this->expectExceptionMessageMatches(
-            self::exactRegex('There are no matchers left for GET https://example.com/foo.'),
+            self::exactRegex('Got a request for GET https://example.com/foo, but there are no matchers left.'),
         );
 
         $this->client->sendRequest($request);
