@@ -18,4 +18,11 @@
     <plugins>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
     </plugins>
+    <issueHandlers>
+        <UndefinedMagicMethod>
+            <errorLevel type="info">
+                <referencedMethod name="Eventjet\TestDouble\TestSoapClient::sendrequest"/>
+            </errorLevel>
+        </UndefinedMagicMethod>
+    </issueHandlers>
 </psalm>

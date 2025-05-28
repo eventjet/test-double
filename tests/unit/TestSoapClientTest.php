@@ -6,6 +6,8 @@ namespace Eventjet\Test\Unit\TestDouble;
 
 use Eventjet\TestDouble\TestSoapClient;
 use LogicException;
+use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use stdClass;
@@ -96,8 +98,8 @@ final class TestSoapClientTest extends TestCase
 
     /**
      * @param class-string<Throwable> $expectedExceptionClass
-     * @dataProvider throwsExceptionCases
      */
+    #[DataProvider('throwsExceptionCases')]
     public function testThrowsException(
         callable $prepare,
         string $expectedExceptionClass,
@@ -111,6 +113,7 @@ final class TestSoapClientTest extends TestCase
         $this->soapClient->sendRequest();
     }
 
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();
