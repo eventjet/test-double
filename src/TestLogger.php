@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Eventjet\TestDouble;
 
+use Override;
 use Psr\Log\AbstractLogger;
 use Stringable;
 use Throwable;
@@ -144,6 +145,7 @@ final class TestLogger extends AbstractLogger
         return implode("\n", $lines);
     }
 
+    #[Override]
     public function log($level, Stringable|string $message, array $context = []): void
     {
         $this->records[] = new LogRecord($level, $message, $context);

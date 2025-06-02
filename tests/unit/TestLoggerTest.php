@@ -8,6 +8,8 @@ use DateTime;
 use Eventjet\Test\Unit\TestDouble\Fixtures\CustomError;
 use Eventjet\TestDouble\LogRecord;
 use Eventjet\TestDouble\TestLogger;
+use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use Throwable;
@@ -200,8 +202,8 @@ final class TestLoggerTest extends TestCase
     /**
      * @param list<LogRecord> $records
      * @param Matcher $matcher
-     * @dataProvider onceIssueCases
      */
+    #[DataProvider('onceIssueCases')]
     public function testOnceIssue(array $records, callable $matcher, string $expected): void
     {
         foreach ($records as $record) {
@@ -217,8 +219,8 @@ final class TestLoggerTest extends TestCase
     /**
      * @param list<LogRecord> $records
      * @param Matcher $matcher
-     * @dataProvider onceMatchesCases
      */
+    #[DataProvider('onceMatchesCases')]
     public function testOnceMatches(array $records, callable $matcher): void
     {
         foreach ($records as $record) {
@@ -230,6 +232,7 @@ final class TestLoggerTest extends TestCase
         self::assertTrue($result);
     }
 
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Eventjet\TestDouble;
 
 use LogicException;
+use Override;
 use SoapClient;
 use Throwable;
 
+use function array_splice;
 use function count;
 use function implode;
 use function sprintf;
@@ -56,6 +58,7 @@ final class TestSoapClient extends SoapClient
     /**
      * @param array<array-key, mixed> $args
      */
+    #[Override]
     public function __call(string $name, array $args): mixed
     {
         if ($this->map === []) {
@@ -84,10 +87,13 @@ final class TestSoapClient extends SoapClient
         $index = $matchingIndices[0];
         $response = $this->map[$index][1];
         if ($this->map[$index][2] > 1) {
-            /** @psalm-suppress PropertyTypeCoercion False positive: It can't become less than 1 here */
+            /**
+             * @psalm-suppress PropertyTypeCoercion False positive: It can't become less than 1 here
+             * @phpstan-ignore-next-line assign.propertyType False positive: It can't become less than 1 here
+             */
             $this->map[$index][2]--;
         } else {
-            unset($this->map[$index]);
+            array_splice($this->map, $index, 1);
         }
         if ($response instanceof Throwable) {
             throw $response;
