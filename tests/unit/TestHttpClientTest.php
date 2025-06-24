@@ -198,6 +198,33 @@ final class TestHttpClientTest extends TestCase
         self::assertSame(500, $responseC->getStatusCode(), 'Expected response for /c to be 500.');
     }
 
+    public function testMatchingTheSameRequestMultipleTimes(): void
+    {
+        $this->client->map(Http::method('GET'), $this->httpFactory->createResponse(200, 'OK'), 3);
+        $request = self::parseRequest('GET https://example.com/foo');
+
+        $this->client->sendRequest($request);
+        $this->client->sendRequest($request);
+        $this->client->sendRequest($request);
+
+        $this->expectNotToPerformAssertions(); // Smoke test to ensure no exceptions are thrown
+    }
+
+    public function testMatchingTheSameRequestRunsOut(): void
+    {
+        $this->client->map(Http::method('GET'), $this->httpFactory->createResponse(200, 'OK'), 2);
+        $request = self::parseRequest('GET https://example.com/foo');
+
+        $this->client->sendRequest($request);
+        $this->client->sendRequest($request);
+
+        $this->expectExceptionMessageMatches(
+            self::exactRegex('Got a request for GET https://example.com/foo, but there are no matchers left.'),
+        );
+
+        $this->client->sendRequest($request);
+    }
+
     #[Override]
     protected function setUp(): void
     {
