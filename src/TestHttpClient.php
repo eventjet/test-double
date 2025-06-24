@@ -172,7 +172,7 @@ final class TestHttpClient implements ClientInterface
 
     /**
      * @param RequestMatcher $matcher
-     * @param int $n Number of times the matcher should match before being removed.
+     * @param positive-int $n Number of times the matcher should match before being removed.
      */
     public function map(callable $matcher, ResponseInterface $response, int $n = 1): void
     {
