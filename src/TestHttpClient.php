@@ -23,7 +23,7 @@ use function sprintf;
  */
 final class TestHttpClient implements ClientInterface
 {
-    /** @var list<array{RequestMatcher, ResponseInterface}> */
+    /** @var list<array{RequestMatcher, ResponseInterface, int}> */
     private $mapping = [];
 
     /**
@@ -157,15 +157,25 @@ final class TestHttpClient implements ClientInterface
             self::multipleMatches($request, $matches);
         }
         $matchIndex = array_key_first($matches);
-        array_splice($this->mapping, $matchIndex, 1);
+        if ($this->mapping[$matchIndex][2] === 1) {
+            array_splice($this->mapping, $matchIndex, 1);
+        } else {
+            /**
+             * We're modifying an existing index, so it will stay a list.
+             * @psalm-suppress PropertyTypeCoercion
+             * @phpstan-ignore-next-line assign.propertyType
+             */
+            $this->mapping[$matchIndex][2]--;
+        }
         return $matches[$matchIndex];
     }
 
     /**
      * @param RequestMatcher $matcher
+     * @param positive-int $n Number of times the matcher should match before being removed.
      */
-    public function map(callable $matcher, ResponseInterface $response): void
+    public function map(callable $matcher, ResponseInterface $response, int $n = 1): void
     {
-        $this->mapping[] = [$matcher, $response];
+        $this->mapping[] = [$matcher, $response, $n];
     }
 }
