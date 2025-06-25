@@ -225,6 +225,26 @@ final class TestHttpClientTest extends TestCase
         $this->client->sendRequest($request);
     }
 
+    public function testResponseGenerator(): void
+    {
+        $i = 0;
+        $this->client->map(Http::method('GET'), function (RequestInterface $request) use (&$i) {
+            $body = $this->httpFactory->createStream(
+                sprintf('Response for %s %d', $request->getUri()->getPath(), $i++),
+            );
+            return $this->httpFactory->createResponse(200, 'OK')->withBody($body);
+        }, 3);
+
+        $request = self::parseRequest('GET https://example.com/foo');
+        $a = $this->client->sendRequest($request);
+        $b = $this->client->sendRequest($request);
+        $c = $this->client->sendRequest($request);
+
+        self::assertSame('Response for /foo 0', (string)$a->getBody(), 'Expected first response body to match.');
+        self::assertSame('Response for /foo 1', (string)$b->getBody(), 'Expected second response body to match.');
+        self::assertSame('Response for /foo 2', (string)$c->getBody(), 'Expected third response body to match.');
+    }
+
     #[Override]
     protected function setUp(): void
     {
