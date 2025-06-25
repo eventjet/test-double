@@ -20,10 +20,11 @@ use function sprintf;
 
 /**
  * @phpstan-type RequestMatcher callable(RequestInterface): (true | string)
+ * @phpstan-type ResponseGenerator callable(RequestInterface): ResponseInterface
  */
 final class TestHttpClient implements ClientInterface
 {
-    /** @var list<array{RequestMatcher, ResponseInterface, int}> */
+    /** @var list<array{RequestMatcher, ResponseInterface | ResponseGenerator, int}> */
     private $mapping = [];
 
     /**
@@ -126,7 +127,7 @@ final class TestHttpClient implements ClientInterface
     }
 
     /**
-     * @param array<int, ResponseInterface> $matches
+     * @param array<int, mixed> $matches
      */
     private static function multipleMatches(RequestInterface $request, array $matches): never
     {
@@ -167,14 +168,19 @@ final class TestHttpClient implements ClientInterface
              */
             $this->mapping[$matchIndex][2]--;
         }
-        return $matches[$matchIndex];
+        $response = $matches[$matchIndex];
+        if (!$response instanceof ResponseInterface) {
+            $response = $response($request);
+        }
+        return $response;
     }
 
     /**
+     * @param ResponseInterface | ResponseGenerator $response
      * @param RequestMatcher $matcher
      * @param positive-int $n Number of times the matcher should match before being removed.
      */
-    public function map(callable $matcher, ResponseInterface $response, int $n = 1): void
+    public function map(callable $matcher, ResponseInterface|callable $response, int $n = 1): void
     {
         $this->mapping[] = [$matcher, $response, $n];
     }
