@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Eventjet\TestDouble;
 
+use Eventjet\TestDouble\Matcher\Str;
+use Eventjet\TestDouble\Matcher\Val;
 use Override;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -16,11 +18,14 @@ use function array_splice;
 use function count;
 use function explode;
 use function implode;
+use function is_string;
 use function sprintf;
 
 /**
  * @phpstan-type RequestMatcher callable(RequestInterface): (true | string)
  * @phpstan-type ResponseGenerator callable(RequestInterface): ResponseInterface
+ * @phpstan-import-type StringMatcher from Str
+ * @phpstan-import-type ValueMatcher from Val
  */
 final class TestHttpClient implements ClientInterface
 {
@@ -80,13 +85,24 @@ final class TestHttpClient implements ClientInterface
     }
 
     /**
+     * @param string | StringMatcher $expected
      * @return RequestMatcher
      */
-    public static function path(string $expected): callable
+    public static function path(string|callable $expected): callable
     {
+        if (is_string($expected)) {
+            return static function (RequestInterface $request) use ($expected): true|string {
+                $actual = $request->getUri()->getPath();
+                return $actual === $expected ? true : sprintf('Expected path "%s", but got "%s".', $expected, $actual);
+            };
+        }
         return static function (RequestInterface $request) use ($expected): true|string {
             $actual = $request->getUri()->getPath();
-            return $actual === $expected ? true : sprintf('Expected path "%s", but got "%s".', $expected, $actual);
+            $result = $expected($actual);
+            if (!is_string($result)) {
+                return true;
+            }
+            return sprintf("Path does not match:\n%s", self::indent($result));
         };
     }
 
