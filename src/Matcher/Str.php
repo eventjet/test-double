@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Eventjet\TestDouble\Matcher;
 
-use Throwable;
-
 use function assert;
 use function preg_match;
 use function restore_error_handler;
@@ -34,13 +32,7 @@ final readonly class Str
                      */
                     return true;
                 },
-                static function () use ($regex, $actual) {
-                    try {
-                        return preg_match($regex, $actual);
-                    } catch (Throwable $e) {
-                        return $e;
-                    }
-                },
+                static fn() => preg_match($regex, $actual),
             );
             if ($error !== '') {
                 return sprintf('Invalid regex "%s": %s', $regex, $error);
