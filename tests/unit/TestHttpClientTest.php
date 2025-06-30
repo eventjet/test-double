@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Eventjet\Test\Unit\TestDouble;
 
+use Eventjet\TestDouble\Matcher\Str;
+use Eventjet\TestDouble\Matcher\Val;
 use Eventjet\TestDouble\TestHttpClient as Http;
 use GuzzleHttp\Psr7\HttpFactory;
 use LogicException;
@@ -11,6 +13,7 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
+use stdClass;
 
 use function count;
 use function explode;
@@ -49,6 +52,22 @@ final class TestHttpClientTest extends TestCase
                 Http::and(Http::method('GET'), Http::path('/a')),
                 'matches' => Http::and(Http::method('GET'), Http::path('/b')),
                 Http::and(Http::method('POST'), Http::path('/a')),
+            ],
+            self::parseRequest('GET https://example.com/b'),
+        ];
+        yield 'Path matches regex' => [
+            [
+                Http::path(Str::regex('/^\/user\/\d+$/')),
+                'matches' => Http::path(Str::regex('/^\/user\/\d+\/posts$/')),
+                Http::path(Str::regex('/\/usr\/\d+\/posts/')),
+            ],
+            self::parseRequest('GET https://example.com/user/123/posts'),
+        ];
+        yield 'Path equals' => [
+            [
+                Http::path(Val::eq('/a')),
+                'matches' => Http::path(Val::eq('/b')),
+                Http::path(Val::eq('/c')),
             ],
             self::parseRequest('GET https://example.com/b'),
         ];
@@ -102,6 +121,39 @@ final class TestHttpClientTest extends TestCase
                   Some matchers did not match:
                     0: Matched
                     1: Expected path "/b", but got "/a".
+                EOF,
+        ];
+        yield [
+            [Http::path(Str::regex('//a/'))],
+            self::parseRequest('GET https://example.com/a'),
+            <<<'EOF'
+                There are no matches for request GET https://example.com/a.
+                
+                Matcher #0:
+                  Path does not match:
+                    Invalid regex "//a/": preg_match(): Unknown modifier 'a'
+                EOF,
+        ];
+        yield [
+            [Http::path(Str::regex('/\/\d+/'))],
+            self::parseRequest('GET https://example.com/a'),
+            <<<'EOF'
+                There are no matches for request GET https://example.com/a.
+                
+                Matcher #0:
+                  Path does not match:
+                    "/a" does not match regex /\/\d+/.
+                EOF,
+        ];
+        yield [
+            [Http::path(Val::eq(new stdClass()))],
+            self::parseRequest('GET https://example.com/a'),
+            <<<'EOF'
+                There are no matches for request GET https://example.com/a.
+                
+                Matcher #0:
+                  Path does not match:
+                    Expected value [ stdClass ], but got "\/a".
                 EOF,
         ];
     }
