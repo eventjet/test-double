@@ -187,4 +187,26 @@ final class TestLogger extends AbstractLogger
         }
         return true;
     }
+
+    /**
+     * @param Matcher $matcher
+     */
+    public function never(callable $matcher): true|string
+    {
+        $matches = [];
+        foreach ($this->records as $index => $record) {
+            $result = $matcher($record);
+            if ($result !== true) {
+                continue;
+            }
+            $matches[] = sprintf('Record %d: "%s"', $index, $record->message);
+        }
+        if (count($matches) === 0) {
+            return true;
+        }
+        return sprintf(
+            'Expected no records to match, but these did:' . "\n\n%s",
+            implode("\n", $matches),
+        );
+    }
 }

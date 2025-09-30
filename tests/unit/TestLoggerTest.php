@@ -200,6 +200,80 @@ final class TestLoggerTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{list<LogRecord>, Matcher, string}>
+     */
+    public static function neverIssueCases(): iterable
+    {
+        yield 'Only record matches' => [
+            [new LogRecord(LogLevel::INFO, 'Foo')],
+            TestLogger::level(LogLevel::INFO),
+            <<<'EOL'
+                Expected no records to match, but these did:
+                
+                Record 0: "Foo"
+                EOL,
+        ];
+        yield 'One of the records matches' => [
+            [
+                new LogRecord(LogLevel::INFO, 'Foo'),
+                new LogRecord(LogLevel::ERROR, 'Bar'),
+                new LogRecord(LogLevel::ALERT, 'Baz'),
+            ],
+            TestLogger::and(
+                TestLogger::level(LogLevel::ERROR),
+                TestLogger::message('Bar'),
+            ),
+            <<<'EOL'
+                Expected no records to match, but these did:
+
+                Record 1: "Bar"
+                EOL,
+        ];
+        yield 'Multiple records match' => [
+            [
+                new LogRecord(LogLevel::INFO, 'Foo'),
+                new LogRecord(LogLevel::ERROR, 'Bar'),
+                new LogRecord(LogLevel::ALERT, 'Baz'),
+            ],
+            TestLogger::partialMessage('Ba'),
+            <<<'EOL'
+                Expected no records to match, but these did:
+
+                Record 1: "Bar"
+                Record 2: "Baz"
+                EOL,
+        ];
+        yield 'All records match' => [
+            [
+                new LogRecord(LogLevel::INFO, 'Foo'),
+                new LogRecord(LogLevel::INFO, 'Bar'),
+                new LogRecord(LogLevel::INFO, 'Baz'),
+            ],
+            TestLogger::level(LogLevel::INFO),
+            <<<'EOL'
+                Expected no records to match, but these did:
+                
+                Record 0: "Foo"
+                Record 1: "Bar"
+                Record 2: "Baz"
+                EOL,
+        ];
+    }
+
+    /**
+     * @return iterable<string, array{list<LogRecord>, Matcher}>
+     */
+    public static function neverMatchesCases(): iterable
+    {
+        yield 'No records' => [[], TestLogger::level(LogLevel::INFO)];
+        yield 'One record' => [[new LogRecord(LogLevel::ERROR, '')], TestLogger::level(LogLevel::INFO)];
+        yield 'Two records' => [
+            [new LogRecord(LogLevel::ERROR, 'Foo'), new LogRecord(LogLevel::DEBUG, 'Bar')],
+            TestLogger::level(LogLevel::INFO),
+        ];
+    }
+
+    /**
      * @param list<LogRecord> $records
      * @param Matcher $matcher
      */
@@ -228,6 +302,39 @@ final class TestLoggerTest extends TestCase
         }
 
         $result = $this->logger->once($matcher);
+
+        self::assertTrue($result);
+    }
+
+    /**
+     * @param list<LogRecord> $records
+     * @param Matcher $matcher
+     */
+    #[DataProvider('neverIssueCases')]
+    public function testNeverIssue(array $records, callable $matcher, string $expected): void
+    {
+        foreach ($records as $record) {
+            $this->logger->log($record->level, $record->message, $record->context);
+        }
+
+        $result = $this->logger->never($matcher);
+
+        self::assertNotTrue($result, 'Expected none of the records to match, but one did.');
+        self::assertSame($expected, $result);
+    }
+
+    /**
+     * @param list<LogRecord> $records
+     * @param Matcher $matcher
+     */
+    #[DataProvider('neverMatchesCases')]
+    public function testNeverMatches(array $records, callable $matcher): void
+    {
+        foreach ($records as $record) {
+            $this->logger->log($record->level, $record->message, $record->context);
+        }
+
+        $result = $this->logger->never($matcher);
 
         self::assertTrue($result);
     }
