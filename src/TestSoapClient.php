@@ -87,10 +87,7 @@ final class TestSoapClient extends SoapClient
         $index = $matchingIndices[0];
         $response = $this->map[$index][1];
         if ($this->map[$index][2] > 1) {
-            /**
-             * @psalm-suppress PropertyTypeCoercion False positive: It can't become less than 1 here
-             * @phpstan-ignore-next-line assign.propertyType False positive: It can't become less than 1 here
-             */
+            /** @psalm-suppress PropertyTypeCoercion False positive: It can't become less than 1 here */
             $this->map[$index][2]--;
         } else {
             array_splice($this->map, $index, 1);

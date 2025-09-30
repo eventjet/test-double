@@ -177,11 +177,7 @@ final class TestHttpClient implements ClientInterface
         if ($this->mapping[$matchIndex][2] === 1) {
             array_splice($this->mapping, $matchIndex, 1);
         } else {
-            /**
-             * We're modifying an existing index, so it will stay a list.
-             * @psalm-suppress PropertyTypeCoercion
-             * @phpstan-ignore-next-line assign.propertyType
-             */
+            /** @psalm-suppress PropertyTypeCoercion We're modifying an existing index, so it will stay a list. */
             $this->mapping[$matchIndex][2]--;
         }
         $response = $matches[$matchIndex];
