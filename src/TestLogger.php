@@ -152,6 +152,14 @@ final class TestLogger extends AbstractLogger
     }
 
     /**
+     * Clears all stored records, resetting the storage to an empty state.
+     */
+    public function clear(): void
+    {
+        $this->records = [];
+    }
+
+    /**
      * @param Matcher $matcher
      */
     public function once(callable $matcher): true|string
