@@ -14,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use Throwable;
 
+use function assert;
+
 /**
  * @phpstan-import-type Matcher from TestLogger
  */
@@ -337,6 +339,29 @@ final class TestLoggerTest extends TestCase
         $result = $this->logger->never($matcher);
 
         self::assertTrue($result);
+    }
+
+    public function testDoesNotMatchAnythingAfterClearing(): void
+    {
+        $this->logger->log(LogLevel::INFO, 'Foo');
+
+        $matcher = TestLogger::level(LogLevel::INFO);
+        assert($this->logger->once($matcher), 'Sanity check: should match before it is cleared');
+        $this->logger->clear();
+
+        self::assertNotTrue($this->logger->once($matcher));
+    }
+
+    public function testClearIsIdempotent(): void
+    {
+        $this->logger->log(LogLevel::INFO, 'Foo');
+
+        $matcher = TestLogger::level(LogLevel::INFO);
+        assert($this->logger->once($matcher), 'Sanity check: should match before it is cleared');
+        $this->logger->clear();
+        $this->logger->clear();
+
+        self::assertNotTrue($this->logger->once($matcher));
     }
 
     #[Override]
