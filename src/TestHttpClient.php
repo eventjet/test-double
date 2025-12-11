@@ -211,6 +211,13 @@ final class TestHttpClient implements ClientInterface
      *
      * The order of the requests is the same as the order in which they were matched.
      *
+     * The matcher is compared by identity (`===`), meaning you must pass the exact same callable instance that was used
+     * in `map()`. Two functionally equivalent matchers created separately (e.g., calling `Http::method('GET')` twice)
+     * are considered different.
+     *
+     * Only root matchers passed directly to `map()` are tracked. Matchers wrapped inside `Http::and()` or other
+     * composite matchers will not be found by this method.
+     *
      * @param RequestMatcher $matcher
      * @return list<RequestInterface>
      */
