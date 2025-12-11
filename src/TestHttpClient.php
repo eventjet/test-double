@@ -31,6 +31,8 @@ final class TestHttpClient implements ClientInterface
 {
     /** @var list<array{RequestMatcher, ResponseInterface | ResponseGenerator, int}> */
     private $mapping = [];
+    /** @var array{list<RequestMatcher>, list<RequestInterface>} */
+    private $matches = [[], []];
 
     /**
      * @param RequestMatcher ...$matchers
@@ -162,7 +164,7 @@ final class TestHttpClient implements ClientInterface
         foreach ($this->mapping as $index => [$matcher, $response]) {
             $result = $matcher($request);
             if ($result === true) {
-                $matches[$index] = $response;
+                $matches[$index] = [$matcher, $response];
             } else {
                 $issues[] = $result;
             }
@@ -180,7 +182,11 @@ final class TestHttpClient implements ClientInterface
             /** @psalm-suppress PropertyTypeCoercion We're modifying an existing index, so it will stay a list. */
             $this->mapping[$matchIndex][2]--;
         }
-        $response = $matches[$matchIndex];
+        [$matcher, $response] = $matches[$matchIndex];
+        /** @psalm-suppress PropertyTypeCoercion False positive */
+        $this->matches[0][] = $matcher;
+        /** @psalm-suppress PropertyTypeCoercion False positive */
+        $this->matches[1][] = $request;
         if (!$response instanceof ResponseInterface) {
             $response = $response($request);
         }
@@ -195,5 +201,28 @@ final class TestHttpClient implements ClientInterface
     public function map(callable $matcher, ResponseInterface|callable $response, int $n = 1): void
     {
         $this->mapping[] = [$matcher, $response, $n];
+    }
+
+    /**
+     * Returns the requests matched by the given matcher.
+     *
+     * Only requests returned by `sendRequest` are considered. So if a request was matched by multiple matchers
+     * (resulting in an error), it will not be included here.
+     *
+     * The order of the requests is the same as the order in which they were matched.
+     *
+     * @param RequestMatcher $matcher
+     * @return list<RequestInterface>
+     */
+    public function getRequestsMatchedBy(callable $matcher): array
+    {
+        $requests = [];
+        foreach ($this->matches[0] as $index => $m) {
+            if ($matcher !== $m) {
+                continue;
+            }
+            $requests[] = $this->matches[1][$index];
+        }
+        return $requests;
     }
 }

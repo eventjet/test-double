@@ -14,9 +14,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use stdClass;
+use Throwable;
 
 use function count;
 use function explode;
+use function is_array;
+use function is_callable;
 use function is_string;
 use function preg_quote;
 use function sprintf;
@@ -158,6 +161,44 @@ final class TestHttpClientTest extends TestCase
         ];
     }
 
+    /**
+     * @return iterable<string, array{
+     *     list<RequestMatcher | array{RequestMatcher, positive-int}>,
+     *     list<RequestInterface>,
+     *     RequestMatcher,
+     *     list<RequestInterface>,
+     * }>
+     */
+    public static function provideGetRequestsMatchedByCases(): iterable
+    {
+        yield 'Nothing mapped, no requests sent' => [
+            [],
+            [],
+            Http::method('GET'),
+            [],
+        ];
+        yield 'Only mapped request was matched' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$matcher],
+                [$request],
+                $matcher,
+                [$request],
+            ];
+        })();
+        yield 'Multiple consecutive matches for the same matcher' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [[$matcher, 3]],
+                [$request, $request, $request],
+                $matcher,
+                [$request, $request, $request],
+            ];
+        })();
+    }
+
     private static function parseRequest(string $request): RequestInterface
     {
         $parts = explode(' ', $request, 2);
@@ -295,6 +336,40 @@ final class TestHttpClientTest extends TestCase
         self::assertSame('Response for /foo 0', (string)$a->getBody(), 'Expected first response body to match.');
         self::assertSame('Response for /foo 1', (string)$b->getBody(), 'Expected second response body to match.');
         self::assertSame('Response for /foo 2', (string)$c->getBody(), 'Expected third response body to match.');
+    }
+
+    /**
+     * @param list<RequestMatcher | array{RequestMatcher, positive-int}> $mappedMatchers
+     * @param list<RequestInterface> $requests
+     * @param RequestMatcher $matcherToSearchBy
+     * @param list<RequestInterface> $expectedRequests
+     */
+    #[DataProvider('provideGetRequestsMatchedByCases')]
+    public function testGetRequestsMatchedBy(array $mappedMatchers, array $requests, callable $matcherToSearchBy, array $expectedRequests): void
+    {
+        foreach ($mappedMatchers as $matcher) {
+            $times = 1;
+            if (is_array($matcher) && !is_callable($matcher)) {
+                [$matcher, $times] = $matcher;
+            }
+            /**
+             * Even though both agree, I can't imagine how this isn't a false positive.
+             * @psalm-suppress PossiblyInvalidArgument
+             * @phpstan-ignore-next-line argument.type
+             */
+            $this->client->map($matcher, $this->httpFactory->createResponse(200, 'OK'), $times);
+        }
+
+        foreach ($requests as $request) {
+            try {
+                $this->client->sendRequest($request);
+            } catch (Throwable) {
+                // We don't care about requests that don't match anything
+            }
+        }
+
+        $actualRequests = $this->client->getRequestsMatchedBy($matcherToSearchBy);
+        self::assertSame($expectedRequests, $actualRequests);
     }
 
     #[Override]
