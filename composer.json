@@ -13,7 +13,7 @@
     "require-dev": {
         "eventjet/coding-standard": "^3.12",
         "guzzlehttp/psr7": "^2.7",
-        "infection/infection": "^0.29.14",
+        "infection/infection": "^0.31.9",
         "maglnet/composer-require-checker": "^4.16",
         "phpstan/extension-installer": "^1.3",
         "phpstan/phpstan": "^2.1",

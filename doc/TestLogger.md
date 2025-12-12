@@ -141,7 +141,7 @@ Expected message "Connection failed", got "Connection timeout".
 
 Matches log records where a specific context key exists and its value satisfies the provided matcher.
 
-The `$valueMatcher` is a callable that receives the value and returns `true` or an error message string.
+The `$valueMatcher` is a callable that receives the value and returns `true` or an error message string. You can use the matchers from [Matchers.md](Matchers.md) or write custom ones.
 
 ```php
 // Check if user_id exists and equals 123
@@ -160,6 +160,22 @@ TestLogger::contextValueMatches(
 TestLogger::contextValueMatches(
     'tags',
     fn($value) => in_array('critical', $value) ? true : "Missing 'critical' tag"
+)
+
+// Using the Str::regex() matcher for pattern matching
+use Eventjet\TestDouble\Matcher\Str;
+
+TestLogger::contextValueMatches(
+    'request_id',
+    Str::regex('/^[a-f0-9-]{36}$/') // Match UUID format
+)
+
+// Using the Val::eq() matcher for strict equality
+use Eventjet\TestDouble\Matcher\Val;
+
+TestLogger::contextValueMatches(
+    'status_code',
+    Val::eq(200)
 )
 ```
 

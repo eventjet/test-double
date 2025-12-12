@@ -14,9 +14,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use stdClass;
+use Throwable;
 
 use function count;
 use function explode;
+use function is_array;
+use function is_callable;
 use function is_string;
 use function preg_quote;
 use function sprintf;
@@ -158,6 +161,197 @@ final class TestHttpClientTest extends TestCase
         ];
     }
 
+    /**
+     * @return iterable<string, array{
+     *     list<RequestMatcher | array{RequestMatcher, positive-int}>,
+     *     list<RequestInterface>,
+     *     RequestMatcher,
+     *     list<RequestInterface>,
+     * }>
+     */
+    public static function provideGetRequestsMatchedByCases(): iterable
+    {
+        yield 'Nothing mapped, no requests sent' => [
+            [],
+            [],
+            Http::method('GET'),
+            [],
+        ];
+        yield 'Only mapped request was matched' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$matcher],
+                [$request],
+                $matcher,
+                [$request],
+            ];
+        })();
+        yield 'Multiple consecutive matches for the same matcher' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [[$matcher, 3]],
+                [$request, $request, $request],
+                $matcher,
+                [$request, $request, $request],
+            ];
+        })();
+        yield 'Identity vs equality: two equivalent matchers are different' => (static function (): array {
+            $matcherA = Http::method('GET');
+            $matcherB = Http::method('GET'); // Equivalent but not identical
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$matcherA],
+                [$request],
+                $matcherB, // Searching with a different instance
+                [],
+            ];
+        })();
+        yield 'Matcher never mapped, requests sent to other matchers' => (static function (): array {
+            $mappedMatcher = Http::method('GET');
+            $unmappedMatcher = Http::method('POST');
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$mappedMatcher],
+                [$request],
+                $unmappedMatcher,
+                [],
+            ];
+        })();
+        yield 'Matcher mapped but no requests sent yet' => (static function (): array {
+            $matcher = Http::method('GET');
+            return [
+                [$matcher],
+                [], // No requests sent
+                $matcher,
+                [],
+            ];
+        })();
+        yield 'Matcher mapped but request matched different matcher' => (static function (): array {
+            $matcherA = Http::path('/a');
+            $matcherB = Http::path('/b');
+            $request = self::parseRequest('GET https://example.com/b');
+            return [
+                [$matcherA, $matcherB],
+                [$request], // Matches matcherB
+                $matcherA, // Search for matcherA
+                [],
+            ];
+        })();
+        yield 'Matcher exhausted returns all matches' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request1 = self::parseRequest('GET https://example.com/foo');
+            $request2 = self::parseRequest('GET https://example.com/bar');
+            return [
+                [[$matcher, 2]],
+                [$request1, $request2],
+                $matcher,
+                [$request1, $request2],
+            ];
+        })();
+        yield 'Order preservation with interleaved matchers' => (static function (): array {
+            $matcherA = Http::path('/a');
+            $matcherB = Http::path('/b');
+            $requestA1 = self::parseRequest('GET https://example.com/a');
+            $requestB1 = self::parseRequest('GET https://example.com/b');
+            $requestA2 = self::parseRequest('POST https://example.com/a');
+            $requestB2 = self::parseRequest('POST https://example.com/b');
+            return [
+                [[$matcherA, 2], [$matcherB, 2]],
+                [$requestA1, $requestB1, $requestA2, $requestB2], // Interleaved
+                $matcherA,
+                [$requestA1, $requestA2], // Only A requests, in order
+            ];
+        })();
+        yield 'Order preservation with interleaved matchers - search for B' => (static function (): array {
+            $matcherA = Http::path('/a');
+            $matcherB = Http::path('/b');
+            $requestA1 = self::parseRequest('GET https://example.com/a');
+            $requestB1 = self::parseRequest('GET https://example.com/b');
+            $requestA2 = self::parseRequest('POST https://example.com/a');
+            $requestB2 = self::parseRequest('POST https://example.com/b');
+            return [
+                [[$matcherA, 2], [$matcherB, 2]],
+                [$requestA1, $requestB1, $requestA2, $requestB2], // Interleaved
+                $matcherB,
+                [$requestB1, $requestB2], // Only B requests, in order
+            ];
+        })();
+        yield 'Response generator compatibility' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$matcher],
+                [$request],
+                $matcher,
+                [$request],
+                // Note: The test framework will use a regular response, but this case documents
+                // that getRequestsMatchedBy works regardless of response type (tested separately)
+            ];
+        })();
+        yield 'Same request instance matched multiple times' => (static function (): array {
+            $matcher = Http::method('GET');
+            $request = self::parseRequest('GET https://example.com/foo');
+            // Same request object sent 3 times
+            return [
+                [[$matcher, 3]],
+                [$request, $request, $request],
+                $matcher,
+                [$request, $request, $request],
+            ];
+        })();
+        yield 'Inner matcher from Http::and() not found - search with inner' => (static function (): array {
+            $innerMatcher = Http::method('GET');
+            $outerMatcher = Http::and($innerMatcher, Http::path('/foo'));
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$outerMatcher],
+                [$request],
+                $innerMatcher, // Search with inner matcher
+                [], // Should not find anything - only root matchers are tracked
+            ];
+        })();
+        yield 'Inner matcher from Http::and() not found - search with outer' => (static function (): array {
+            $innerMatcher = Http::method('GET');
+            $outerMatcher = Http::and($innerMatcher, Http::path('/foo'));
+            $request = self::parseRequest('GET https://example.com/foo');
+            return [
+                [$outerMatcher],
+                [$request],
+                $outerMatcher, // Search with outer matcher
+                [$request], // Should find it
+            ];
+        })();
+        yield 'Multiple different matchers, search with unrelated one' => (static function (): array {
+            $matcherA = Http::path('/a');
+            $matcherB = Http::path('/b');
+            $matcherC = Http::path('/c');
+            $unrelatedMatcher = Http::method('DELETE');
+            $requestA = self::parseRequest('GET https://example.com/a');
+            $requestB = self::parseRequest('GET https://example.com/b');
+            $requestC = self::parseRequest('GET https://example.com/c');
+            return [
+                [$matcherA, $matcherB, $matcherC],
+                [$requestA, $requestB, $requestC],
+                $unrelatedMatcher,
+                [],
+            ];
+        })();
+        yield 'Multi-match error does not record request' => (static function (): array {
+            // Two matchers that both match the same request - this will throw an exception
+            $matcherA = Http::method('GET');
+            $matcherB = Http::path('/foo');
+            $request = self::parseRequest('GET https://example.com/foo'); // Matches both!
+            return [
+                [$matcherA, $matcherB],
+                [$request], // This will throw, but the test framework catches it
+                $matcherA,
+                [], // Request should NOT be recorded because sendRequest threw
+            ];
+        })();
+    }
+
     private static function parseRequest(string $request): RequestInterface
     {
         $parts = explode(' ', $request, 2);
@@ -295,6 +489,57 @@ final class TestHttpClientTest extends TestCase
         self::assertSame('Response for /foo 0', (string)$a->getBody(), 'Expected first response body to match.');
         self::assertSame('Response for /foo 1', (string)$b->getBody(), 'Expected second response body to match.');
         self::assertSame('Response for /foo 2', (string)$c->getBody(), 'Expected third response body to match.');
+    }
+
+    public function testGetRequestsMatchedByWithResponseGenerator(): void
+    {
+        $matcher = Http::method('GET');
+        $this->client->map($matcher, function (RequestInterface $_request) {
+            return $this->httpFactory->createResponse(200, 'OK');
+        }, 2);
+
+        $request1 = self::parseRequest('GET https://example.com/foo');
+        $request2 = self::parseRequest('GET https://example.com/bar');
+        $this->client->sendRequest($request1);
+        $this->client->sendRequest($request2);
+
+        $matchedRequests = $this->client->getRequestsMatchedBy($matcher);
+
+        self::assertSame([$request1, $request2], $matchedRequests);
+    }
+
+    /**
+     * @param list<RequestMatcher | array{RequestMatcher, positive-int}> $mappedMatchers
+     * @param list<RequestInterface> $requests
+     * @param RequestMatcher $matcherToSearchBy
+     * @param list<RequestInterface> $expectedRequests
+     */
+    #[DataProvider('provideGetRequestsMatchedByCases')]
+    public function testGetRequestsMatchedBy(array $mappedMatchers, array $requests, callable $matcherToSearchBy, array $expectedRequests): void
+    {
+        foreach ($mappedMatchers as $matcher) {
+            $times = 1;
+            if (is_array($matcher) && !is_callable($matcher)) {
+                [$matcher, $times] = $matcher;
+            }
+            /**
+             * Even though both agree, I can't imagine how this isn't a false positive.
+             * @psalm-suppress PossiblyInvalidArgument
+             * @phpstan-ignore-next-line argument.type
+             */
+            $this->client->map($matcher, $this->httpFactory->createResponse(200, 'OK'), $times);
+        }
+
+        foreach ($requests as $request) {
+            try {
+                $this->client->sendRequest($request);
+            } catch (Throwable) {
+                // We don't care about requests that don't match anything
+            }
+        }
+
+        $actualRequests = $this->client->getRequestsMatchedBy($matcherToSearchBy);
+        self::assertSame($expectedRequests, $actualRequests);
     }
 
     #[Override]
