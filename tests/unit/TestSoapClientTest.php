@@ -26,7 +26,8 @@ final class TestSoapClientTest extends TestCase
     public static function throwsExceptionCases(): iterable
     {
         yield 'No responses mapped' => [
-            static function (): void {},
+            static function (): void {
+            },
             LogicException::class,
             'No responses mapped',
         ];
