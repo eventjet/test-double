@@ -5,6 +5,7 @@ Reusable PSR-compliant test doubles for PHP — drop-in fakes for HTTP clients, 
 ## Requirements
 
 - PHP 8.3+
+- `ext-soap` (only required when using `TestSoapClient`)
 
 ## Installation
 
