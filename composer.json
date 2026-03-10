@@ -1,8 +1,9 @@
 {
     "name": "eventjet/test-double",
     "type": "library",
-    "description": "",
-    "license": "proprietary",
+    "description": "Reusable PSR-compliant test doubles for HTTP clients, loggers, and SOAP clients",
+    "keywords": ["testing", "test-double", "mock", "stub", "psr-3", "psr-18", "http-client", "logger", "phpunit"],
+    "license": "MIT",
     "require": {
         "php": ">=8.3",
         "ext-soap": "*",
@@ -42,12 +43,6 @@
             "Eventjet\\Test\\Unit\\TestDouble\\": "tests/unit"
         }
     },
-    "repositories": [
-        {
-            "type": "composer",
-            "url": "https://pack.eventjet.at/"
-        }
-    ],
     "minimum-stability": "stable",
     "scripts": {
         "check": [
