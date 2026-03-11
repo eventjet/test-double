@@ -192,6 +192,33 @@ Context value "response_time" does not match:
   Response too fast: 500 ms
 ```
 
+### `contextValueEquals(string $key, mixed $expected): callable`
+
+Matches log records where a specific context key exists and its value is strictly equal (`===`) to `$expected`.
+
+This is a convenience shorthand for `contextValueMatches($key, Val::eq($expected))`.
+
+```php
+// Check if status_code equals 200
+TestLogger::contextValueEquals('status_code', 200)
+
+// Check if environment equals "production"
+TestLogger::contextValueEquals('environment', 'production')
+```
+
+**Example failure messages:**
+
+When key doesn't exist:
+```
+Context has no key "status_code".
+```
+
+When value doesn't match:
+```
+Context value "status_code" does not match:
+  Expected value 200, but got 500.
+```
+
 ### `exceptionMatches(callable $exceptionMatcher): callable`
 
 Matches log records where the context contains an `exception` key with a `Throwable` value that satisfies the provided matcher.

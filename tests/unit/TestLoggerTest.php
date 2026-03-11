@@ -144,6 +144,27 @@ final class TestLoggerTest extends TestCase
                     Expected an instance of Throwable, got DateTime.
                 EOF,
         ];
+        yield 'contextValueEquals: key does not exist' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['bar' => 'baz'])],
+            TestLogger::contextValueEquals('foo', 'baz'),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context has no key "foo".
+                EOF,
+        ];
+        yield 'contextValueEquals: value does not match' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['foo' => 'actual'])],
+            TestLogger::contextValueEquals('foo', 'expected'),
+            <<<'EOF'
+                None of the records matched:
+
+                Record 0:
+                  Context value "foo" does not match:
+                    Expected value "expected", but got "actual".
+                EOF,
+        ];
     }
 
     /**
@@ -198,6 +219,14 @@ final class TestLoggerTest extends TestCase
             TestLogger::exceptionMatches(
                 static fn(Throwable $error) => $error instanceof CustomError ? true : 'Wrong',
             ),
+        ];
+        yield 'contextValueEquals: value matches' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['foo' => 'bar'])],
+            TestLogger::contextValueEquals('foo', 'bar'),
+        ];
+        yield 'contextValueEquals: integer value matches' => [
+            [new LogRecord(LogLevel::INFO, 'Foo', ['count' => 42])],
+            TestLogger::contextValueEquals('count', 42),
         ];
     }
 

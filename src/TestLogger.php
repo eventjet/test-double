@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Eventjet\TestDouble;
 
+use Eventjet\TestDouble\Matcher\Val;
 use Override;
 use Psr\Log\AbstractLogger;
 use Stringable;
@@ -109,6 +110,18 @@ final class TestLogger extends AbstractLogger
             }
             return sprintf("Context value \"%s\" does not match:\n%s", $key, self::indent($result));
         };
+    }
+
+    /**
+     * Matches log records where a specific context key exists and its value is strictly equal to $expected.
+     *
+     * This is a convenience wrapper around {@see contextValueMatches()} and {@see Val::eq()}.
+     *
+     * @return Matcher
+     */
+    public static function contextValueEquals(string $key, mixed $expected): callable
+    {
+        return self::contextValueMatches($key, Val::eq($expected));
     }
 
     /**
